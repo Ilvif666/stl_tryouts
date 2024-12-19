@@ -21,7 +21,7 @@ function calcPrice(weight, price, filament, margin) {
     if (priceToUse === null) {
         throw new Error('Нет цены за кг филамента: ' + filament);
     }
-    return weight * priceToUse / 1000 * (1 + margin / 100);
+    return Number((weight * priceToUse / 1000 * (1 + margin / 100)).toFixed(2));
 }
 
 module.exports = {
