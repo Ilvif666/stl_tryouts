@@ -33,7 +33,7 @@ function calculateLinearDimensions(bufferGeometry) {
     const size = new THREE.Vector3();
     boundingBox.getSize(size);
     /* console.log(`Ширина: ${size.x}, Высота: ${size.y}, Глубина: ${size.z}`); */
-    return { width: size.x, height: size.y, depth: size.z };
+    return { width: Number(size.x.toFixed(2)), height: Number(size.y.toFixed(2)), depth: Number(size.z.toFixed(2)) };
 }
 
 
