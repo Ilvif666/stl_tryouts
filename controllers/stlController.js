@@ -27,7 +27,7 @@ async function calculateSTL(req, res) {
     const geometry = await loadStl(filePath);
     const result = calculateLinearDimensions(geometry);
     result.volume = computeVolume(geometry);
-    result.weight = calcWeight(result.volume, densities[plasticType]);
+    result.weight = Number(calcWeight(result.volume, densities[plasticType]));
     result.price = calcPrice(result.weight, priceFilament, plasticType, margin);
 
     return res.status(200).send(result);
