@@ -9,5 +9,10 @@ router
   .route("/")
   .post(upload.single("file"), stlController.calculateSTL);
 
+router
+  .route("/many")
+  .post(upload.array("files", 100), stlController.calculateMultipleSTL);
+
+
 
 module.exports = router;

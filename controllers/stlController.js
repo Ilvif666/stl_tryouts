@@ -40,4 +40,90 @@ async function calculateSTL(req, res) {
   }
 }
 
-module.exports = { calculateSTL };
+async function calculateMultipleSTL(req, res) {
+  try {
+    const files = req.files;
+    if (!files || !files.length) {
+      throw new Error('Нет загруженных файлов');
+    }
+
+    // Параметры из тела запроса
+    const priceFilament = req.body.price;  // цена за кг/г
+    let margin = req.body.margin || 0;     // маржа
+    const plasticType = req.body.type;     // тип пластика
+
+    const densities = readDensities();
+    if (!densities) {
+      throw new Error('Ошибка чтения базы данных');
+    }
+
+    if (!plasticType || !densities[plasticType]) {
+      throw new Error(`Не указан тип пластика или данного пластика нет в базе данных. Поддерживаемые: ${Object.keys(densities).join(', ')}`);
+    }
+
+    // Итоговые суммы
+    let totalVolume = 0;
+    let totalWeight = 0;
+    let totalPrice = 0;
+
+    // Массив результатов по каждому файлу
+    const results = [];
+
+    // Перебираем все загруженные файлы
+    for (const file of files) {
+      // Проверим расширение
+      if (!file.originalname.toLowerCase().endsWith('.stl')) {
+        throw new Error(`Файл ${file.originalname} не является STL`);
+      }
+
+      const filePath = path.join(__dirname, '../uploads', file.filename);
+
+      // Загружаем и вычисляем
+      const geometry = await loadStl(filePath);
+      const linearDims = calculateLinearDimensions(geometry);
+      const volume = computeVolume(geometry);
+      const weight = Number(calcWeight(volume, densities[plasticType]));
+      const price = calcPrice(weight, priceFilament, plasticType, margin);
+
+      // Накапливаем общую статистику
+      totalVolume += volume;
+      totalWeight += weight;
+      totalPrice += price;
+
+      // Сохраняем детали по текущему файлу
+      results.push({
+        filename: file.originalname,
+        linearDims,     // если нужно подробно
+        volume,
+        weight,
+        price
+      });
+    }
+
+    // Формируем итоговый ответ
+    const response = {
+      filesCount: files.length,
+      plasticType,
+      totalVolume,
+      totalWeight,
+      totalPrice,
+      details: results
+    };
+
+    return res.status(200).json(response);
+
+  } catch (error) {
+    console.error('Ошибка расчета:', error);
+    res.status(500).send('Ошибка расчета: ' + error.message);
+  } finally {
+    // Удаляем все загруженные файлы
+    if (req.files && req.files.length) {
+      for (const file of req.files) {
+        const filePath = path.join(__dirname, '../uploads', file.filename);
+        deleteFile(filePath);
+      }
+    }
+  }
+}
+
+module.exports = { calculateMultipleSTL, calculateSTL };
